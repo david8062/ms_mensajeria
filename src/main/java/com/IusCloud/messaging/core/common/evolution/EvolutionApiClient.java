@@ -5,9 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.time.Duration;
 import java.util.Map;
 
 @Component
@@ -20,10 +22,18 @@ public class EvolutionApiClient {
             @Value("${evolution.api.url}") String baseUrl,
             @Value("${evolution.api.key:}") String apiKey
     ) {
-        RestClient.Builder builder = RestClient.builder().baseUrl(baseUrl);
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout((int) Duration.ofSeconds(10).toMillis());
+        factory.setReadTimeout((int) Duration.ofSeconds(30).toMillis());
+
+        RestClient.Builder builder = RestClient.builder()
+                .baseUrl(baseUrl)
+                .requestFactory(factory);
+
         if (apiKey != null && !apiKey.isBlank()) {
             builder.defaultHeader("apikey", apiKey);
         }
+        builder.defaultHeader("Accept", "application/json");
         this.client = builder.build();
     }
 
