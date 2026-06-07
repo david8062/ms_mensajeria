@@ -14,7 +14,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
-@Profile("dev")
+@Profile({"dev", "prod"})
 public class WebSecurityConfig {
 
     private final TenantFilter tenantFilter; // ✅ cambiado
@@ -40,6 +40,7 @@ public class WebSecurityConfig {
                         .accessDeniedHandler(customAccessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/api/v1/webhooks/**").permitAll()
                         .anyRequest().authenticated()
                 )
