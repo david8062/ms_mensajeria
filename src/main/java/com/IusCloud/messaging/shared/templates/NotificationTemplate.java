@@ -36,7 +36,7 @@ public enum NotificationTemplate {
                     + "Gracias por tu colaboración. Si tienes alguna duda, estamos atentos."
     ),
     GENERIC(
-            "{content}"
+            "{mensaje}"
     );
 
     private final String template;

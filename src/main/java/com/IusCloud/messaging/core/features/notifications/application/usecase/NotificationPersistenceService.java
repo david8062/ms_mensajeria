@@ -30,6 +30,12 @@ public class NotificationPersistenceService {
 
         String rendered = templateRenderer.render(request.templateCode(), request.variables());
 
+        if (rendered == null || rendered.isBlank()) {
+            throw new IllegalArgumentException(
+                    "El mensaje renderizado está vacío. Verifica que las variables del template '" +
+                    request.templateCode().name() + "' estén correctamente definidas.");
+        }
+
         NotificationEntity entity = new NotificationEntity();
         entity.setTenantId(tenantId);
         entity.setRecipientPhone(request.recipientPhone());
