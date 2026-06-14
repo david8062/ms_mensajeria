@@ -11,6 +11,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Component
+@Slf4j
 public class TenantFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
@@ -60,6 +62,7 @@ public class TenantFilter extends OncePerRequestFilter {
             }
 
             TenantContext.setTenantId(UUID.fromString(tenantId));
+            log.debug("[TenantFilter] tenantId={} sub={} uri={}", tenantId, claims.getSubject(), request.getRequestURI());
 
             @SuppressWarnings("unchecked")
             List<String> roles = (List<String>) claims.get("roles", List.class);
@@ -96,8 +99,8 @@ public class TenantFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
         } catch (Exception ex) {
-            ex.printStackTrace();
-            System.out.println("error en" + ex.getMessage());
+            log.warn("JWT authentication failed for {}: {}", request.getRequestURI(), ex.getMessage());
+            TenantContext.clear();
             SecurityContextHolder.clearContext();
         }
 

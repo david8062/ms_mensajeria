@@ -37,6 +37,11 @@ public enum NotificationTemplate {
     ),
     GENERIC(
             "{mensaje}"
+    ),
+    OTP_VERIFICATION(
+            "Hola, tu código de verificación para restablecer tu contraseña en IusCloud es:\n\n"
+                    + "*{otp}*\n\n"
+                    + "Este código es válido por 10 minutos. No lo compartas con nadie."
     );
 
     private final String template;

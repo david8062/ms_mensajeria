@@ -10,6 +10,7 @@ import com.IusCloud.messaging.core.features.webhooks.domain.port.in.ProcessEvolu
 import com.IusCloud.messaging.core.features.webhooks.domain.port.out.WebhookEventRepository;
 import com.IusCloud.messaging.core.features.webhooks.domain.port.out.WhatsappInboundMessageRepository;
 import com.IusCloud.messaging.shared.enums.NotificationStatus;
+import com.IusCloud.messaging.shared.enums.WhatsappInstanceStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -62,6 +63,7 @@ public class ProcessEvolutionWebhookUseCase implements ProcessEvolutionWebhookPo
         switch (eventType) {
             case "messages.upsert" -> handleIncomingMessage(payload, instance);
             case "messages.update" -> handleMessageStatusUpdate(payload);
+            case "connection.update" -> handleConnectionUpdate(payload, instance);
             default -> log.debug("Webhook event {} not handled explicitly — only logged", eventType);
         }
     }
@@ -137,6 +139,40 @@ public class ProcessEvolutionWebhookUseCase implements ProcessEvolutionWebhookPo
             default -> { /* SENT u otros — ignorar */ }
         }
         notificationRepository.save(notification);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void handleConnectionUpdate(Map<String, Object> payload, WhatsappInstanceEntity instance) {
+        if (instance == null) {
+            log.warn("connection.update sin instancia registrada — ignorado");
+            return;
+        }
+
+        Object dataObj = payload.get("data");
+        if (!(dataObj instanceof Map<?, ?>)) return;
+        Map<String, Object> data = (Map<String, Object>) dataObj;
+
+        String state = stringOf(data.get("state"));
+        if (state == null) return;
+
+        WhatsappInstanceStatus newStatus = switch (state.toLowerCase()) {
+            case "open" -> WhatsappInstanceStatus.CONNECTED;
+            case "close" -> WhatsappInstanceStatus.DISCONNECTED;
+            case "connecting" -> WhatsappInstanceStatus.CONNECTING;
+            default -> null;
+        };
+
+        if (newStatus == null) {
+            log.debug("connection.update state={} no mapeado — ignorado", state);
+            return;
+        }
+
+        instance.setStatus(newStatus);
+        if (WhatsappInstanceStatus.CONNECTED.equals(newStatus)) {
+            instance.setLastConnectedAt(Instant.now());
+        }
+        instanceRepository.save(instance);
+        log.info("Instancia {} cambió a estado {} vía webhook", instance.getInstanceName(), newStatus);
     }
 
     private static String stringOf(Object o) {

@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -20,5 +21,6 @@ public abstract class BaseDTO {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Instant updatedAt;
 
+    @JsonIgnore
     private Boolean isActive;
 }

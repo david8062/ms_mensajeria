@@ -77,5 +77,118 @@ public class EvolutionApiClient {
         return null;
     }
 
+    public InstanceConnectResult connectInstance(String instanceName) {
+        int maxAttempts = 5;
+        long delayMs = 1_500;
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            InstanceConnectResult result = fetchQr(instanceName);
+            if (result.base64Qr() != null) {
+                return result;
+            }
+            if (attempt < maxAttempts) {
+                log.debug("QR no listo para instance={}, reintento {}/{}", instanceName, attempt, maxAttempts);
+                try {
+                    Thread.sleep(delayMs);
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+        log.warn("QR no disponible para instance={} tras {} intentos", instanceName, maxAttempts);
+        return new InstanceConnectResult(null, null, Map.of());
+    }
+
+    @SuppressWarnings("unchecked")
+    public InstanceConnectResult fetchQr(String instanceName) {
+        try {
+            Map<String, Object> response = client.get()
+                    .uri("/instance/connect/{instance}", instanceName)
+                    .retrieve()
+                    .onStatus(s -> s.value() == 404, (req, res) -> {
+                        throw new BusinessException("INSTANCE_NOT_IN_EVOLUTION",
+                                "La instancia no existe en Evolution API. Registra la instancia primero con PUT /instances.");
+                    })
+                    .onStatus(HttpStatusCode::isError, (req, res) -> {
+                        throw new BusinessException("Evolution API respondió " + res.getStatusCode() + " al obtener QR");
+                    })
+                    .body(Map.class);
+
+            if (response == null) throw new BusinessException("Evolution no devolvió datos de conexión");
+
+            String base64 = stringVal(response.get("base64"));
+            if (base64 == null) {
+                log.warn("Evolution devolvió base64=null para instance={}, respuesta completa: {}", instanceName, response);
+            }
+            return new InstanceConnectResult(base64, stringVal(response.get("code")), response);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Evolution fetchQr failed for instance={}: {}", instanceName, e.getMessage());
+            throw new BusinessException("Error obteniendo QR de Evolution: " + e.getMessage());
+        }
+    }
+
+    public void ensureInstance(String instanceName) {
+        Map<String, Object> body = Map.of(
+                "instanceName", instanceName,
+                "qrcode", true,
+                "integration", "WHATSAPP-BAILEYS"
+        );
+        try {
+            client.post()
+                    .uri("/instance/create")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(body)
+                    .retrieve()
+                    .onStatus(
+                            s -> s.isError() && s.value() != 400 && s.value() != 409,
+                            (req, res) -> {
+                                throw new BusinessException("Error registrando instancia en Evolution: " + res.getStatusCode());
+                            }
+                    )
+                    .toBodilessEntity();
+            log.info("Evolution: instancia {} registrada o ya existía", instanceName);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Evolution ensureInstance failed for {}: {}", instanceName, e.getMessage());
+            throw new BusinessException("Error registrando instancia en Evolution: " + e.getMessage());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public String getConnectionState(String instanceName) {
+        try {
+            Map<String, Object> response = client.get()
+                    .uri("/instance/connectionState/{instance}", instanceName)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, (req, res) -> {
+                        throw new BusinessException("Evolution API respondió " + res.getStatusCode() + " al consultar estado");
+                    })
+                    .body(Map.class);
+
+            if (response == null) return "unknown";
+            Object instanceObj = response.get("instance");
+            if (instanceObj instanceof Map<?, ?> m) {
+                Object state = ((Map<String, Object>) m).get("state");
+                return state != null ? state.toString() : "unknown";
+            }
+            return "unknown";
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Evolution getConnectionState failed for instance={}: {}", instanceName, e.getMessage());
+            throw new BusinessException("Error consultando estado en Evolution: " + e.getMessage());
+        }
+    }
+
+    private static String stringVal(Object o) {
+        return o != null ? o.toString() : null;
+    }
+
     public record SendMessageResult(String messageId, Map<String, Object> raw) {}
+
+    public record InstanceConnectResult(String base64Qr, String pairingCode, Map<String, Object> raw) {}
 }

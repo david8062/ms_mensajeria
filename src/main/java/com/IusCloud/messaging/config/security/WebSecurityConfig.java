@@ -2,6 +2,7 @@ package com.IusCloud.messaging.config.security;
 
 import java.util.List;
 
+import com.IusCloud.messaging.config.InternalKeyFilter;
 import com.IusCloud.messaging.config.TenantFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,15 +18,18 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Profile({"dev", "prod"})
 public class WebSecurityConfig {
 
-    private final TenantFilter tenantFilter; // ✅ cambiado
+    private final TenantFilter tenantFilter;
+    private final InternalKeyFilter internalKeyFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     public WebSecurityConfig(
-            TenantFilter tenantFilter, // ✅ cambiado
+            TenantFilter tenantFilter,
+            InternalKeyFilter internalKeyFilter,
             JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
             CustomAccessDeniedHandler customAccessDeniedHandler) {
         this.tenantFilter = tenantFilter;
+        this.internalKeyFilter = internalKeyFilter;
         this.jwtAuthenticationEntryPoint = jwtAuthenticationEntryPoint;
         this.customAccessDeniedHandler = customAccessDeniedHandler;
     }
@@ -42,9 +46,11 @@ public class WebSecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/api/v1/webhooks/**").permitAll()
+                        .requestMatchers("/api/v1/internal/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(tenantFilter, UsernamePasswordAuthenticationFilter.class) // ✅
+                .addFilterBefore(internalKeyFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(tenantFilter, UsernamePasswordAuthenticationFilter.class)
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable());
 

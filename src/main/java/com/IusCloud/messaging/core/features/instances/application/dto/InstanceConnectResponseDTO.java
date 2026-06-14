@@ -1,17 +1,14 @@
 package com.IusCloud.messaging.core.features.instances.application.dto;
 
-import com.IusCloud.messaging.core.base.BaseDTO;
 import com.IusCloud.messaging.shared.enums.WhatsappInstanceStatus;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
-
-import java.time.Instant;
 
 @Getter
-@Setter
-public class WhatsappInstanceResponseDTO extends BaseDTO {
+@AllArgsConstructor
+public class InstanceConnectResponseDTO {
     private String instanceName;
-    private String phoneNumber;
     private WhatsappInstanceStatus status;
-    private Instant lastConnectedAt;
+    private String base64Qr;
+    private String pairingCode;
 }

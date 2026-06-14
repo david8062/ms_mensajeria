@@ -1,8 +1,11 @@
 package com.IusCloud.messaging.core.features.instances.infrastructure.inbound;
 
+import com.IusCloud.messaging.core.features.instances.application.dto.InstanceConnectResponseDTO;
 import com.IusCloud.messaging.core.features.instances.application.dto.WhatsappInstanceRequestDTO;
 import com.IusCloud.messaging.core.features.instances.application.dto.WhatsappInstanceResponseDTO;
+import com.IusCloud.messaging.core.features.instances.domain.port.in.ConnectInstancePort;
 import com.IusCloud.messaging.core.features.instances.domain.port.in.GetInstancePort;
+import com.IusCloud.messaging.core.features.instances.domain.port.in.GetInstanceQrPort;
 import com.IusCloud.messaging.core.features.instances.domain.port.in.UpsertInstancePort;
 import com.IusCloud.messaging.shared.responses.ApiResponse;
 import com.IusCloud.messaging.shared.responses.ResponseUtil;
@@ -21,6 +24,8 @@ public class WhatsappInstanceController {
 
     private final UpsertInstancePort upsertInstanceUseCase;
     private final GetInstancePort getInstanceUseCase;
+    private final ConnectInstancePort connectInstanceUseCase;
+    private final GetInstanceQrPort getInstanceQrUseCase;
 
     @PutMapping
     public ResponseEntity<ApiResponse<WhatsappInstanceResponseDTO>> upsert(
@@ -34,5 +39,17 @@ public class WhatsappInstanceController {
     public ResponseEntity<ApiResponse<WhatsappInstanceResponseDTO>> get() {
         UUID tenantId = TenantContext.getTenantId();
         return ResponseUtil.ok(getInstanceUseCase.execute(tenantId));
+    }
+
+    @PostMapping("/connect")
+    public ResponseEntity<ApiResponse<InstanceConnectResponseDTO>> connect() {
+        UUID tenantId = TenantContext.getTenantId();
+        return ResponseUtil.ok(connectInstanceUseCase.execute(tenantId));
+    }
+
+    @GetMapping("/qr")
+    public ResponseEntity<ApiResponse<InstanceConnectResponseDTO>> getQr() {
+        UUID tenantId = TenantContext.getTenantId();
+        return ResponseUtil.ok(getInstanceQrUseCase.execute(tenantId));
     }
 }
