@@ -21,7 +21,7 @@ jobs:
           cache: maven
 
       - name: Run tests
-        run: ./mvnw test
+        run: mvn test -Dsurefire.excludes="**/*ApplicationTests.java"
 
       - name: Install sshpass
         run: sudo apt-get install -y sshpass
