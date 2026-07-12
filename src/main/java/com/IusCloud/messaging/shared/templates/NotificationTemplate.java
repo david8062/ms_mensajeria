@@ -42,6 +42,12 @@ public enum NotificationTemplate {
             "Hola, tu código de verificación para restablecer tu contraseña en IusCloud es:\n\n"
                     + "*{otp}*\n\n"
                     + "Este código es válido por 10 minutos. No lo compartas con nadie."
+    ),
+    SIGNUP_VERIFICATION(
+            "¡Bienvenido a IusCloud! Tu código para crear tu cuenta es:\n\n"
+                    + "*{otp}*\n\n"
+                    + "Este código es válido por 10 minutos. No lo compartas con nadie.\n\n"
+                    + "Si no estabas creando una cuenta, ignora este mensaje."
     );
 
     private final String template;
