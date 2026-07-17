@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -38,22 +39,23 @@ public class AssistantClient {
                 .build();
     }
 
-    /** Devuelve el texto a enviar, o {@code null} si ms-ia no respondió. */
-    public String requestReply(String phone, String text) {
+    /** Devuelve el texto (y archivos opcionales) a enviar, o {@code null} si ms-ia no respondió. */
+    public AssistantReply requestReply(String phone, String text) {
         try {
-            AssistantReply reply = client.post()
+            return client.post()
                     .uri("/api/v1/internal/assistant/whatsapp")
                     .header("X-Internal-Key", internalApiKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(Map.of("phone", phone, "text", text))
                     .retrieve()
                     .body(AssistantReply.class);
-            return reply != null ? reply.reply() : null;
         } catch (Exception e) {
             log.warn("El asistente (ms-ia) no respondió para {}: {}", phone, e.getMessage());
             return null;
         }
     }
 
-    private record AssistantReply(String reply) {}
+    public record AssistantReply(String reply, List<Media> media) {}
+
+    public record Media(String url, String filename) {}
 }

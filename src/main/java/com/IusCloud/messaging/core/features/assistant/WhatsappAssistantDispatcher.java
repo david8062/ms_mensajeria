@@ -52,9 +52,21 @@ public class WhatsappAssistantDispatcher {
         }
         pool.submit(() -> {
             try {
-                String reply = assistantClient.requestReply(senderPhone, text);
-                if (reply != null && !reply.isBlank()) {
-                    evolutionApiClient.sendText(platformInstance, senderPhone, reply);
+                AssistantClient.AssistantReply reply = assistantClient.requestReply(senderPhone, text);
+                if (reply == null) {
+                    return;
+                }
+                if (reply.reply() != null && !reply.reply().isBlank()) {
+                    evolutionApiClient.sendText(platformInstance, senderPhone, reply.reply());
+                }
+                if (reply.media() != null) {
+                    for (AssistantClient.Media m : reply.media()) {
+                        try {
+                            evolutionApiClient.sendMedia(platformInstance, senderPhone, m.url(), m.filename());
+                        } catch (Exception e) {
+                            log.warn("No se pudo enviar el archivo {} a {}: {}", m.filename(), senderPhone, e.getMessage());
+                        }
+                    }
                 }
             } catch (Exception e) {
                 log.warn("No se pudo atender el mensaje del asistente de {}: {}", senderPhone, e.getMessage());

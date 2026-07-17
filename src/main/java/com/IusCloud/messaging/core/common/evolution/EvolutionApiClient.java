@@ -66,6 +66,41 @@ public class EvolutionApiClient {
         }
     }
 
+    /**
+     * Envía un archivo (documento) por WhatsApp. {@code mediaUrl} es una URL que Evolution
+     * descarga (presigned de MinIO). Se usa para mandarle al abogado los documentos de su caso.
+     */
+    public SendMessageResult sendMedia(String instanceName, String phoneNumber, String mediaUrl, String fileName) {
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("number", phoneNumber);
+        body.put("mediatype", "document");
+        body.put("media", mediaUrl);
+        if (fileName != null && !fileName.isBlank()) {
+            body.put("fileName", fileName);
+        }
+
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = client.post()
+                    .uri("/message/sendMedia/{instance}", instanceName)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(body)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, (req, res) -> {
+                        throw new BusinessException("Evolution API respondió " + res.getStatusCode() + ": "
+                                + new String(res.getBody().readAllBytes()));
+                    })
+                    .body(Map.class);
+
+            return new SendMessageResult(extractMessageId(response), response);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Evolution sendMedia failed for instance={} phone={}: {}", instanceName, phoneNumber, e.getMessage());
+            throw new BusinessException("Error enviando archivo vía Evolution: " + e.getMessage());
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private String extractMessageId(Map<String, Object> response) {
         if (response == null) return null;
