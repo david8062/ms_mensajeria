@@ -1,6 +1,7 @@
 package com.IusCloud.messaging.core.features.notifications.domain.model;
 
 import com.IusCloud.messaging.core.base.BaseModel;
+import com.IusCloud.messaging.shared.enums.NotificationSender;
 import com.IusCloud.messaging.shared.enums.NotificationStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -40,6 +41,10 @@ public class NotificationEntity extends BaseModel {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private NotificationStatus status = NotificationStatus.PENDING;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sender", nullable = false, length = 20)
+    private NotificationSender sender = NotificationSender.TENANT;
 
     @Column(name = "evolution_message_id", length = 120)
     private String evolutionMessageId;

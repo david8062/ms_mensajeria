@@ -38,6 +38,22 @@ public enum NotificationTemplate {
     GENERIC(
             "{mensaje}"
     ),
+    /**
+     * Novedad de la Rama Judicial en un proceso en seguimiento.
+     *
+     * <p>El cuerpo se compone en legal-core y llega ya armado en {@code mensaje}, en
+     * vez de describirse aquí con variables sueltas, por dos razones: el texto varía
+     * en singular/plural y lleva una lista de actuaciones de largo variable, que un
+     * reemplazo plano no sabe expresar; y así el modo sombra (que envía con GENERIC)
+     * y el modo real producen EXACTAMENTE el mismo mensaje — si divergieran, la
+     * sombra dejaría de ser una vista previa fiel, que es su único propósito.
+     *
+     * <p>Existe separada de GENERIC, aunque renderice igual, para que las alertas de
+     * seguimiento sean contables y auditables por {@code template_code}.
+     */
+    CASE_PROCESS_UPDATE(
+            "{mensaje}"
+    ),
     OTP_VERIFICATION(
             "Hola, tu código de verificación para restablecer tu contraseña en IusCloud es:\n\n"
                     + "*{otp}*\n\n"

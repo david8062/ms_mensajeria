@@ -3,6 +3,7 @@ package com.IusCloud.messaging.core.features.notifications.application.usecase;
 import com.IusCloud.messaging.core.features.notifications.application.dto.CreateNotificationRequestDTO;
 import com.IusCloud.messaging.core.features.notifications.domain.model.NotificationEntity;
 import com.IusCloud.messaging.core.features.notifications.domain.port.out.NotificationRepository;
+import com.IusCloud.messaging.shared.enums.NotificationSender;
 import com.IusCloud.messaging.shared.enums.NotificationStatus;
 import com.IusCloud.messaging.shared.templates.TemplateRenderer;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,7 @@ public class NotificationPersistenceService {
         entity.setScheduledAt(request.scheduledAt());
         entity.setIdempotencyKey(request.idempotencyKey());
         entity.setPayload(request.payload());
+        entity.setSender(request.sender() == null ? NotificationSender.TENANT : request.sender());
 
         boolean shouldSendNow = request.scheduledAt() == null || !request.scheduledAt().isAfter(Instant.now());
         entity.setStatus(shouldSendNow ? NotificationStatus.PENDING : NotificationStatus.SCHEDULED);

@@ -6,9 +6,11 @@ import com.IusCloud.messaging.core.features.instances.domain.port.out.WhatsappIn
 import com.IusCloud.messaging.core.features.notifications.domain.model.NotificationEntity;
 import com.IusCloud.messaging.core.features.notifications.domain.port.in.DispatchNotificationPort;
 import com.IusCloud.messaging.core.features.notifications.domain.port.out.NotificationRepository;
+import com.IusCloud.messaging.shared.enums.NotificationSender;
 import com.IusCloud.messaging.shared.enums.NotificationStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,20 +26,23 @@ public class DispatchNotificationUseCase implements DispatchNotificationPort {
     private final WhatsappInstanceRepository instanceRepository;
     private final EvolutionApiClient evolutionApiClient;
 
+    /** Línea propia de IusCloud: no vive en whatsapp_instances, se configura. */
+    @Value("${messaging.platform.instance-name:IusCloud}")
+    private String platformInstance;
+
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void dispatch(NotificationEntity notification) {
-        WhatsappInstanceEntity instance = instanceRepository.findByTenantId(notification.getTenantId())
-                .orElse(null);
+        String instanceName = resolveInstanceName(notification);
 
-        if (instance == null) {
+        if (instanceName == null) {
             markFailed(notification, "No hay instancia de WhatsApp configurada para el tenant");
             return;
         }
 
         try {
             EvolutionApiClient.SendMessageResult result = evolutionApiClient.sendText(
-                    instance.getInstanceName(),
+                    instanceName,
                     notification.getRecipientPhone(),
                     notification.getRenderedContent()
             );
@@ -51,6 +56,19 @@ public class DispatchNotificationUseCase implements DispatchNotificationPort {
             log.warn("Notification {} failed to send: {}", notification.getId(), ex.getMessage());
             markFailed(notification, ex.getMessage());
         }
+    }
+
+    /**
+     * @return el nombre de la instancia desde la que sale el mensaje, o {@code null} si
+     *         el tenant debía tener una y no la ha conectado.
+     */
+    private String resolveInstanceName(NotificationEntity notification) {
+        if (notification.getSender() == NotificationSender.PLATFORM) {
+            return platformInstance;
+        }
+        return instanceRepository.findByTenantId(notification.getTenantId())
+                .map(WhatsappInstanceEntity::getInstanceName)
+                .orElse(null);
     }
 
     private void markFailed(NotificationEntity notification, String error) {

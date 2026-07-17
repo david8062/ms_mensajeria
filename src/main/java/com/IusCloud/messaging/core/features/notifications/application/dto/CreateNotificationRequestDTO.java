@@ -1,5 +1,6 @@
 package com.IusCloud.messaging.core.features.notifications.application.dto;
 
+import com.IusCloud.messaging.shared.enums.NotificationSender;
 import com.IusCloud.messaging.shared.templates.NotificationTemplate;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -24,6 +25,9 @@ public record CreateNotificationRequestDTO(
 
         String idempotencyKey,
 
-        Map<String, Object> payload
+        Map<String, Object> payload,
+
+        /** Línea desde la que sale el mensaje. {@code null} = TENANT (comportamiento histórico). */
+        NotificationSender sender
 ) {
 }
