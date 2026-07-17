@@ -68,6 +68,16 @@ public class WhatsappAssistantDispatcher {
                         }
                     }
                 }
+                // Aviso de lead al dueño (número distinto al remitente).
+                AssistantClient.LeadNotify lead = reply.leadNotify();
+                if (lead != null && lead.phone() != null && !lead.phone().isBlank()
+                        && lead.text() != null && !lead.text().isBlank()) {
+                    try {
+                        evolutionApiClient.sendText(platformInstance, lead.phone(), lead.text());
+                    } catch (Exception e) {
+                        log.warn("No se pudo avisar del lead a {}: {}", lead.phone(), e.getMessage());
+                    }
+                }
             } catch (Exception e) {
                 log.warn("No se pudo atender el mensaje del asistente de {}: {}", senderPhone, e.getMessage());
             }
