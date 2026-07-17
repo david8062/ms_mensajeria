@@ -1,5 +1,6 @@
 package com.IusCloud.messaging.core.features.webhooks.application.usecase;
 
+import com.IusCloud.messaging.core.features.assistant.WhatsappAssistantDispatcher;
 import com.IusCloud.messaging.core.features.instances.domain.model.WhatsappInstanceEntity;
 import com.IusCloud.messaging.core.features.instances.domain.port.out.WhatsappInstanceRepository;
 import com.IusCloud.messaging.core.features.notifications.domain.model.NotificationEntity;
@@ -28,6 +29,7 @@ public class ProcessEvolutionWebhookUseCase implements ProcessEvolutionWebhookPo
     private final WhatsappInboundMessageRepository inboundMessageRepository;
     private final NotificationRepository notificationRepository;
     private final WhatsappInstanceRepository instanceRepository;
+    private final WhatsappAssistantDispatcher assistantDispatcher;
 
     @Override
     @Transactional
@@ -103,6 +105,10 @@ public class ProcessEvolutionWebhookUseCase implements ProcessEvolutionWebhookPo
         msg.setRawPayload(payload);
 
         inboundMessageRepository.save(msg);
+
+        // Si entró por la línea de plataforma (IusCloud), el asistente responde (en segundo plano,
+        // para no bloquear el ack del webhook). Los mensajes de instancias de tenants se ignoran.
+        assistantDispatcher.maybeReply(instance.getInstanceName(), senderPhone, content);
     }
 
     @SuppressWarnings("unchecked")
