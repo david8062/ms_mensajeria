@@ -17,11 +17,14 @@ import java.util.Map;
 public class EvolutionApiClient {
 
     private final RestClient client;
+    private final WhatsappSendThrottle throttle;
 
     public EvolutionApiClient(
             @Value("${evolution.api.url}") String baseUrl,
-            @Value("${evolution.api.key:}") String apiKey
+            @Value("${evolution.api.key:}") String apiKey,
+            WhatsappSendThrottle throttle
     ) {
+        this.throttle = throttle;
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout((int) Duration.ofSeconds(10).toMillis());
         factory.setReadTimeout((int) Duration.ofSeconds(30).toMillis());
@@ -38,6 +41,7 @@ public class EvolutionApiClient {
     }
 
     public SendMessageResult sendText(String instanceName, String phoneNumber, String content) {
+        throttle.pace(instanceName);
         Map<String, Object> body = Map.of(
                 "number", phoneNumber,
                 "text", content
@@ -72,6 +76,7 @@ public class EvolutionApiClient {
      */
     public SendMessageResult sendMedia(String instanceName, String phoneNumber, String mediaUrl,
                                        String fileName, String mimeType) {
+        throttle.pace(instanceName);
         Map<String, Object> body = new java.util.HashMap<>();
         body.put("number", phoneNumber);
         body.put("mediatype", "document");
