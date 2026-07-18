@@ -70,13 +70,19 @@ public class EvolutionApiClient {
      * Envía un archivo (documento) por WhatsApp. {@code mediaUrl} es una URL que Evolution
      * descarga (presigned de MinIO). Se usa para mandarle al abogado los documentos de su caso.
      */
-    public SendMessageResult sendMedia(String instanceName, String phoneNumber, String mediaUrl, String fileName) {
+    public SendMessageResult sendMedia(String instanceName, String phoneNumber, String mediaUrl,
+                                       String fileName, String mimeType) {
         Map<String, Object> body = new java.util.HashMap<>();
         body.put("number", phoneNumber);
         body.put("mediatype", "document");
         body.put("media", mediaUrl);
-        if (fileName != null && !fileName.isBlank()) {
-            body.put("fileName", fileName);
+        // Sin mimetype WhatsApp entrega el archivo como adjunto genérico que no se puede abrir.
+        if (mimeType != null && !mimeType.isBlank()) {
+            body.put("mimetype", mimeType);
+        }
+        String finalName = ensureExtension(fileName, mimeType);
+        if (finalName != null && !finalName.isBlank()) {
+            body.put("fileName", finalName);
         }
 
         try {
@@ -99,6 +105,44 @@ public class EvolutionApiClient {
             log.error("Evolution sendMedia failed for instance={} phone={}: {}", instanceName, phoneNumber, e.getMessage());
             throw new BusinessException("Error enviando archivo vía Evolution: " + e.getMessage());
         }
+    }
+
+    /**
+     * WhatsApp usa la extensión del nombre para saber con qué app abrir el archivo. El nombre visible
+     * del documento (p. ej. "Contestación demanda") suele venir sin extensión; si falta, la derivamos
+     * del mimeType para que el archivo se pueda abrir en el teléfono.
+     */
+    static String ensureExtension(String fileName, String mimeType) {
+        if (fileName == null || fileName.isBlank()) {
+            return fileName;
+        }
+        String name = fileName.trim();
+        int lastDot = name.lastIndexOf('.');
+        // Ya tiene una extensión razonable (1-5 chars tras el punto): no tocar.
+        if (lastDot > 0 && lastDot >= name.length() - 6) {
+            return name;
+        }
+        String ext = extensionFor(mimeType);
+        return ext == null ? name : name + "." + ext;
+    }
+
+    /** Extensión (sin punto) para los tipos que sube el abogado; {@code null} si no la conocemos. */
+    private static String extensionFor(String mimeType) {
+        if (mimeType == null) {
+            return null;
+        }
+        return switch (mimeType.trim().toLowerCase().split(";")[0]) {
+            case "application/pdf" -> "pdf";
+            case "image/jpeg" -> "jpg";
+            case "image/png" -> "png";
+            case "image/webp" -> "webp";
+            case "application/msword" -> "doc";
+            case "application/vnd.openxmlformats-officedocument.wordprocessingml.document" -> "docx";
+            case "application/vnd.ms-excel" -> "xls";
+            case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" -> "xlsx";
+            case "text/plain" -> "txt";
+            default -> null;
+        };
     }
 
     @SuppressWarnings("unchecked")

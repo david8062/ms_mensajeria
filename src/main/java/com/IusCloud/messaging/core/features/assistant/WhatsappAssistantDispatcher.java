@@ -62,7 +62,7 @@ public class WhatsappAssistantDispatcher {
                 if (reply.media() != null) {
                     for (AssistantClient.Media m : reply.media()) {
                         try {
-                            evolutionApiClient.sendMedia(platformInstance, senderPhone, m.url(), m.filename());
+                            evolutionApiClient.sendMedia(platformInstance, senderPhone, m.url(), m.filename(), m.mimeType());
                         } catch (Exception e) {
                             log.warn("No se pudo enviar el archivo {} a {}: {}", m.filename(), senderPhone, e.getMessage());
                         }

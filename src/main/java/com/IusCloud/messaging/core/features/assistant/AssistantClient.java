@@ -57,7 +57,7 @@ public class AssistantClient {
 
     public record AssistantReply(String reply, List<Media> media, LeadNotify leadNotify) {}
 
-    public record Media(String url, String filename) {}
+    public record Media(String url, String filename, String mimeType) {}
 
     /** Aviso al dueño de un lead (número sin cuenta) que se envía aparte, a otro número. */
     public record LeadNotify(String phone, String text) {}
